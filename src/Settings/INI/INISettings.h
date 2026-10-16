@@ -61,8 +61,12 @@ namespace Settings
 		inline static constexpr const char* SKILL_XP_BLOCK_REFLECT_SPELL = "Block|fSkillXPBlockReflectSpell";
 		inline static constexpr const char* SKILL_XP_BLOCK_DESTROY_ARROW = "Block|fSkillXPBlockDestroyArrow";
 		inline static constexpr const char* ENABLE_BLOOD_RITUAL_HEALTH_CASTING = "Alteration|bEnableBloodRitualHealthCasting";
+		inline static constexpr const char* ENABLE_LOCATIONAL_DAMAGE = "LocationalDamage|bEnableLocationalDamage";
+		inline static constexpr const char* SHOW_LOCATIONAL_DAMAGE_MESSAGES = "LocationalDamage|bShowHitMessages";
+		inline static constexpr const char* LOCATIONAL_DAMAGE_HEADSHOT_MULT_RANK1 = "LocationalDamage|fHeadshotDamageMultPinpointPrecision1";
+		inline static constexpr const char* LOCATIONAL_DAMAGE_HEADSHOT_MULT_RANK2 = "LocationalDamage|fHeadshotDamageMultPinpointPrecision2";
 
-		inline static constexpr const std::uint8_t EXPECTED_COUNT = 15;
+		inline static constexpr const std::uint8_t EXPECTED_COUNT = 19;
 
 		inline static constexpr const std::array<const char*, EXPECTED_COUNT> EXPECTED_SETTINGS = {
 			ENABLE_LIGHTARMOR_PASSIVE_XP,
@@ -79,7 +83,11 @@ namespace Settings
 			SKILL_XP_BLOCK_REFLECT_SPELL,
 			ENABLE_BASH_DESTROY_ARROW,
 			SKILL_XP_BLOCK_DESTROY_ARROW,
-			ENABLE_BLOOD_RITUAL_HEALTH_CASTING
+			ENABLE_BLOOD_RITUAL_HEALTH_CASTING,
+			ENABLE_LOCATIONAL_DAMAGE,
+			SHOW_LOCATIONAL_DAMAGE_MESSAGES,
+			LOCATIONAL_DAMAGE_HEADSHOT_MULT_RANK1,
+			LOCATIONAL_DAMAGE_HEADSHOT_MULT_RANK2
 		};
 
 		template <typename T>

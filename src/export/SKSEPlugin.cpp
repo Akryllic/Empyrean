@@ -10,6 +10,7 @@
 #include "Hooks/Smithing.h"
 #include "hooks/Block.h"
 #include "Hooks/Lockpicking.h"
+#include "Hooks/LocationalDamage.h"
 
 static void MessageEventCallback(SKSE::MessagingInterface::Message* a_msg)
 {
@@ -27,6 +28,7 @@ static void MessageEventCallback(SKSE::MessagingInterface::Message* a_msg)
 		Hooks::Smithing::LoadData();
 		Hooks::Block::LoadData();
 		Hooks::Lockpicking::LoadData();
+		Hooks::LocationalDamage::LoadData();
 
 		SECTION_SEPARATOR;
 		logger::info("Finished startup tasks, enjoy your game!"sv);
@@ -45,7 +47,7 @@ SKSEPluginInfo(
 
 SKSE_PLUGIN_LOAD(const SKSE::LoadInterface* a_skse)
 {
-	SKSE::Init(a_skse, { .trampoline = true, .trampolineSize = 249 });
+	SKSE::Init(a_skse, { .trampoline = true, .trampolineSize = 285 });
 	logger::info("Author: Steelfeathers & SeaSparrow"sv);
 	logger::info("Runtime: {} ({})"sv, REL::Module::get().version().string(), REL::Module::IsVR() ? "VR"sv : REL::Module::IsAE() ? "AE"sv : "SE"sv);
 	SECTION_SEPARATOR;
