@@ -26,6 +26,7 @@ namespace Hooks
 			RE::ObjectRefHandle                   projectile;
 			RE::ActorHandle                       target;
 			RE::ActorHandle                       aggressor;
+			RE::NiPoint3                          position;
 			const Rule*                           rule = nullptr;
 			std::chrono::steady_clock::time_point queued;
 			std::vector<RE::ActiveEffect*>        amplified;
@@ -64,7 +65,7 @@ namespace Hooks
 
 		static std::optional<PendingHit> TakePendingHit(const RE::HitData& a_hitData);
 		static void ApplyEffects(const PendingHit& a_hit);
-		static std::vector<RE::ActiveEffect*> AmplifyNewEffects(RE::Actor* a_target, RE::ActorHandle a_caster, float a_mult, const std::vector<RE::ActiveEffect*>& a_skip);
+		static std::vector<RE::ActiveEffect*> AmplifyNewEffects(RE::Actor* a_target, RE::ActorHandle a_caster, float a_mult, const std::vector<RE::ActiveEffect*>& a_skip, const RE::MagicItem* a_excludedSpell);
 		static std::string HitMessage(const Rule& a_rule);
 		static bool CastsFromTarget(const RE::SpellItem* a_spell);
 

@@ -194,12 +194,16 @@ namespace Hooks
 			return;
 		}
 
-		a_hitData->totalDamage *= hit->rule->damageMult;
-		s_impactOverride = hit->rule->impactData;
+		const auto& rule = *hit->rule;
+		a_hitData->totalDamage *= rule.damageMult;
+		s_impactOverride = rule.impactData;
 		_HandleHitTask(a_target, a_hitData);
 		s_impactOverride = nullptr;
 
-		ApplyEffects(*hit);
+		const auto target = hit->target.get();
+		if (target && hit->aggressor && rule.damageMult != 1.0f) {
+			AmplifyNewEffects(target.get(), hit->aggressor, rule.damageMult, hit->amplified, rule.spell);
+		}
 	}
 
 	RE::BGSImpactData* LocationalDamage::GetImpactData(RE::BGSImpactDataSet* a_impactDataSet, RE::BGSMaterialType* a_material)
@@ -250,24 +254,22 @@ namespace Hooks
 			}
 		}
 
-		PendingHit hit{ a_projectile->GetHandle(), target->GetHandle(), shooter ? shooter->GetHandle() : RE::ActorHandle{}, rule, std::chrono::steady_clock::now() };
+		PendingHit hit{ a_projectile->GetHandle(), target->GetHandle(), shooter ? shooter->GetHandle() : RE::ActorHandle{}, impact->desiredTargetLoc, rule, std::chrono::steady_clock::now() };
+		if (shooter && rule->damageMult != 1.0f) {
+			hit.amplified = AmplifyNewEffects(target, hit.aggressor, rule->damageMult, {}, rule->spell);
+		}
+
 		if (!RE::TaskQueueInterface::ShouldUseTaskQueue()) {
 			ApplyEffects(hit);
 			return;
 		}
 
-		if (shooter && rule->damageMult != 1.0f) {
-			hit.amplified = AmplifyNewEffects(target, hit.aggressor, rule->damageMult, {});
-		}
-
 		if (runtime.weaponDamage > 0.0f) {
 			std::lock_guard lock(pendingLock);
 			std::erase_if(pendingHits, [&](const PendingHit& a_pending) { return hit.queued - a_pending.queued > PENDING_HIT_LIFETIME; });
-			pendingHits.push_back(std::move(hit));
+			pendingHits.push_back(hit);
 		}
-		else {
-			SKSE::GetTaskInterface()->AddTask([hit = std::move(hit)]() { ApplyEffects(hit); });
-		}
+		SKSE::GetTaskInterface()->AddTask([hit = std::move(hit)]() { ApplyEffects(hit); });
 	}
 
 	const LocationalDamage::Rule* LocationalDamage::FindRule(RE::Projectile* a_projectile, RE::Actor* a_target, RE::Actor* a_shooter, std::string_view a_nodeName)
@@ -363,7 +365,9 @@ namespace Hooks
 		std::erase_if(pendingHits, [&](const PendingHit& a_pending) { return now - a_pending.queued > PENDING_HIT_LIFETIME; });
 
 		const auto it = std::ranges::find_if(pendingHits, [&](const PendingHit& a_pending) {
-			return a_pending.projectile == a_hitData.sourceRef && a_pending.target == a_hitData.target;
+			if (a_pending.target != a_hitData.target) return false;
+			if (a_pending.projectile == a_hitData.sourceRef) return true;
+			return a_pending.aggressor == a_hitData.aggressor && a_pending.position.GetSquaredDistance(a_hitData.hitPosition) <= 1.0f;
 		});
 		if (it == pendingHits.end()) return std::nullopt;
 
@@ -381,8 +385,6 @@ namespace Hooks
 		const auto& rule = *a_hit.rule;
 
 		if (aggressor) {
-			if (rule.damageMult != 1.0f) AmplifyNewEffects(target.get(), a_hit.aggressor, rule.damageMult, a_hit.amplified);
-
 			const bool shooterIsPlayer = aggressor->IsPlayerRef();
 			if (rule.sound && (shooterIsPlayer || target->IsPlayerRef())) RE::PlaySound(rule.sound);
 			if (rule.messageKey && shooterIsPlayer && showMessages) RE::SendHUDMessage::ShowHUDMessage(HitMessage(rule).c_str(), nullptr, false);
@@ -396,14 +398,14 @@ namespace Hooks
 		}
 	}
 
-	std::vector<RE::ActiveEffect*> LocationalDamage::AmplifyNewEffects(RE::Actor* a_target, RE::ActorHandle a_caster, float a_mult, const std::vector<RE::ActiveEffect*>& a_skip)
+	std::vector<RE::ActiveEffect*> LocationalDamage::AmplifyNewEffects(RE::Actor* a_target, RE::ActorHandle a_caster, float a_mult, const std::vector<RE::ActiveEffect*>& a_skip, const RE::MagicItem* a_excludedSpell)
 	{
 		std::vector<RE::ActiveEffect*> amplified;
 		const auto activeEffects = a_target->AsMagicTarget()->GetActiveEffectList();
 		if (!activeEffects) return amplified;
 
 		for (auto* effect : *activeEffects) {
-			if (!effect || effect->elapsedSeconds != 0.0f || effect->caster != a_caster || std::ranges::contains(a_skip, effect)) continue;
+			if (!effect || effect->elapsedSeconds != 0.0f || effect->caster != a_caster || effect->spell == a_excludedSpell || std::ranges::contains(a_skip, effect)) continue;
 
 			const auto* baseEffect = effect->GetBaseObject();
 			if (!baseEffect) continue;
